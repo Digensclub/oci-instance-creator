@@ -4,6 +4,11 @@ on:
     - cron: '*/10 * * * *' # Triggers every 10 minutes
   workflow_dispatch:      # Allows manual trigger
 
+# This prevents multiple runs from overlapping
+concurrency: 
+  group: oci-generator-group
+  cancel-in-progress: false
+
 jobs:
   launch-instance:
     runs-on: ubuntu-latest
