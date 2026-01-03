@@ -32,20 +32,21 @@ jobs:
         run: |
           go build -o creator *.go
           
-          # Run exactly 5 times
-          for i in {1..5}
+          # Run exactly 20 times
+          for i in {1..20}
           do
-            echo "--- GitHub Action Attempt $i of 5 ---"
+            echo "--- GitHub Action Attempt #$i of 20 ---"
             
             # Start the creator.
             # 'timeout 30s' stops the Go tool's internal loop after 30 seconds.
             # '&& exit 0' stops everything if the VM is actually created.
-            timeout 30s ./creator && exit 0 || echo "Attempt $i finished (no capacity or timeout). Retrying in 60s..."
+            # We use timeout 15s because the API responds in ~2s
+            timeout 15s ./creator && exit 0 || echo "Attempt $i finished (no capacity or timeout). Retrying in 30s..."
             
-            # Wait 60 seconds before the next attempt, but skip the wait after the last one
-            if [ $i -lt 5 ]; then 
-              sleep 60
+            # Wait 30 seconds before the next attempt, but skip the wait after the last one
+            if [ $i -lt 20 ]; then 
+              sleep 30
             fi
           done
           
-          echo "Reached 5 attempts limit. Workflow closing. See you in 10 minutes!"
+          echo "Finished 10 attempts. Moving to next scheduled cycle."
