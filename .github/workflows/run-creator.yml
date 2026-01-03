@@ -7,7 +7,6 @@ on:
 jobs:
   launch-instance:
     runs-on: ubuntu-latest
-    # We set a 10-minute timeout so the next scheduled run doesn't overlap
     timeout-minutes: 10 
     steps:
       - name: Checkout Code
@@ -20,7 +19,6 @@ jobs:
 
       - name: Run Script
         env:
-          # --- YOUR CONFIG SECRETS ---
           OCI_USER_ID: ${{ secrets.OCI_USER_ID }}
           OCI_TENANCY_ID: ${{ secrets.OCI_TENANCY_ID }}
           OCI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
@@ -31,13 +29,23 @@ jobs:
           CPUS: ${{ secrets.CPUS }}
           VOLUME_SIZE: ${{ secrets.VOLUME_SIZE }}
           KEY_PATH: ./oci.key
-
-          # --- THE LIMITING LOGIC ---
-          # This tells the Go code to stop after 6 attempts
-          MAX_ATTEMPTS: 5
-          # This ensures it waits 60 seconds between those 6 attempts
-          CREATE_INTERVAL_SECONDS: 60 
-
         run: |
           go build -o creator *.go
-          ./creator
+          
+          # Run exactly 5 times
+          for i in {1..5}
+          do
+            echo "--- GitHub Action Attempt $i of 5 ---"
+            
+            # Start the creator.
+            # 'timeout 30s' stops the Go tool's internal loop after 30 seconds.
+            # '&& exit 0' stops everything if the VM is actually created.
+            timeout 30s ./creator && exit 0 || echo "Attempt $i finished (no capacity or timeout). Retrying in 60s..."
+            
+            # Wait 60 seconds before the next attempt, but skip the wait after the last one
+            if [ $i -lt 5 ]; then 
+              sleep 60
+            fi
+          done
+          
+          echo "Reached 5 attempts limit. Workflow closing. See you in 10 minutes!"
