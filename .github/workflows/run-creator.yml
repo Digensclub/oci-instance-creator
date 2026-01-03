@@ -1,0 +1,38 @@
+name: OCI Auto Instance Creator
+on:
+  schedule:
+    - cron: '*/10 * * * *' # Tries every 10 minutes
+  workflow_dispatch:      # Allows you to start it manually
+
+jobs:
+  launch-instance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Create API Key File
+        run: |
+          # This converts your OCI_KEY_FILE secret into a real file
+          echo "${{ secrets.OCI_KEY_FILE }}" > oci.key
+          chmod 600 oci.key
+
+      - name: Run Script
+        env:
+          # Required OCI Config from your secrets
+          OCI_USER_ID: ${{ secrets.OCI_USER_ID }}
+          OCI_TENANCY_ID: ${{ secrets.OCI_TENANCY_ID }}
+          OCI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
+          OCI_REGION: ${{ secrets.OCI_REGION }}
+          OCI_IMAGE_ID: ${{ secrets.IMAGE_ID }}
+          OCI_SUBNET_ID: ${{ secrets.SUBNET_ID }}
+          # VM Config
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          CPUS: ${{ secrets.CPUS }}
+          VOLUME_SIZE: ${{ secrets.VOLUME_SIZE }}
+          # Path where we just created the key file
+          KEY_PATH: ./oci.key
+        run: |
+          # Build and run the Go code
+          go build -o creator *.go
+          ./creator
