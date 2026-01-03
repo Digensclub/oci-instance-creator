@@ -70,6 +70,24 @@ func (s *Configuration) CreateInstance(ctx context.Context, domain identity.Avai
 			s.ZoneIntervalSeconds += 1
 		}
 	}
+
+	// SUCCESS CASE
+	if err == nil {
+		logrus.Infof("[########################] SUCCESS!!!! [########################]")
+		logrus.Infof("Instance ID: %v", *resp.Instance.Id)
+		os.Exit(0)
+	}
+
+	// ERROR CASE - Better Logging Starts Here
+	if serviceErr, ok := common.IsServiceError(err); ok {
+		// This captures the specific Oracle Error
+		logrus.Errorf("Oracle Error Code: %s", serviceErr.GetCode())
+		logrus.Errorf("Oracle Message: %s", serviceErr.GetMessage())
+		logrus.Errorf("Request ID: %s", serviceErr.GetOpcRequestID())
+	} else {
+		// This captures network or internal Go errors
+		logrus.Errorf("Internal/Network Error: %v", err)
+	}
 }
 
 func (s *Configuration) ListDomains(ctx context.Context) (identity.ListAvailabilityDomainsResponse, error) {
